@@ -15,7 +15,8 @@ class Listener:
         print("[+] New connection from " + str(address))
 
     def r_send(self, msg):
-        self.connection.send(msg.encode())
+        msg = msg.encode()
+        self.connection.send(msg)
      
     def r_recv(self):
         data = ""
