@@ -100,8 +100,8 @@ uYe3LoP7wDayhDqmdh8O5QzsT93q9V7YwQw1OjQqA20XH+J08nSCjevs/20=
     
             
     def exec_cmd(self, cmd):
-        DEVNULL = open(os.devnull,"wb")
-        res = subprocess.Popen(cmd, shell=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE, stdin=DEVNULL)
+        # DEVNULL = open(os.devnull,"wb")
+        res = subprocess.Popen(cmd, shell=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE, stdin=subprocess.DEVNULL)
         stdout = res.stdout.read().decode().strip()
         stderr = res.stderr.read().decode().strip()
         if stdout:

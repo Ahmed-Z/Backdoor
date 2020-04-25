@@ -107,8 +107,7 @@ lgKFNB0WAhw9dYCLHW1wtjejOc+IaeCxdMf77NX7hO7YsJS1FIyohB1EAcXZTz7H
             encrypted = self.encrypt(msg)
         encrypted += "done".encode()
         self.connection.send(encrypted)
-
-
+        
     def r_recv(self):
         data = "".encode()
         while not data.endswith("done".encode()):
